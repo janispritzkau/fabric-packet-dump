@@ -94,7 +94,7 @@ public class ConnectionMixin implements ConnectionHandler {
         FriendlyByteBuf packetBuf = new FriendlyByteBuf(Unpooled.buffer());
         packetBuf.writeLong(Duration.between(startTime, Instant.now()).toMillis());
         packetBuf.writeBoolean(flow == PacketFlow.CLIENTBOUND);
-        packetBuf.writeVarInt(protocol.getPacketId(flow, packet));
+        packetBuf.writeInt(protocol.getPacketId(flow, packet));
         packet.write(packetBuf);
 
         FriendlyByteBuf headerBuf = new FriendlyByteBuf(Unpooled.buffer());

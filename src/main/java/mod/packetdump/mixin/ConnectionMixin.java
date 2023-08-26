@@ -28,6 +28,8 @@ import java.util.UUID;
 
 @Mixin(Connection.class)
 public class ConnectionMixin implements ConnectionHandler {
+    @Shadow private Channel channel;
+    @Shadow @Final public static AttributeKey<ConnectionProtocol> ATTRIBUTE_PROTOCOL;
     @Unique
     private OutputStream stream = null;
     @Unique
@@ -89,7 +91,8 @@ public class ConnectionMixin implements ConnectionHandler {
                 ? (isReceiving ? PacketFlow.SERVERBOUND : PacketFlow.CLIENTBOUND)
                 : (isReceiving ? PacketFlow.CLIENTBOUND : PacketFlow.SERVERBOUND);
 
-        ConnectionProtocol protocol = ConnectionProtocol.getProtocolForPacket(packet);
+        ConnectionProtocol protocol = channel.attr(ATTRIBUTE_PROTOCOL).get();
+        if (protocol == null) protocol = ConnectionProtocol.getProtocolForPacket(packet);
 
         FriendlyByteBuf packetBuf = new FriendlyByteBuf(Unpooled.buffer());
         packetBuf.writeLong(Duration.between(startTime, Instant.now()).toMillis());

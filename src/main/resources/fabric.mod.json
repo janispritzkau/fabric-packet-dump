@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "packet-dump",
+  "version": "${version}",
+  "name": "Packet Dump",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "mod.packetdump.PacketDump"
+    ]
+  },
+  "mixins": [
+    "packet-dump.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_version}"
+  }
+}

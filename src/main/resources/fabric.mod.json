@@ -5,9 +5,7 @@
   "name": "Packet Dump",
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "mod.packetdump.PacketDump"
-    ]
+    "main": []
   },
   "mixins": [
     "packet-dump.mixins.json"

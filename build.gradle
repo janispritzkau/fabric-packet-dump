@@ -19,9 +19,6 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    implementation "com.github.luben:zstd-jni:1.5.5-5"
-    include "com.github.luben:zstd-jni:1.5.5-5"
 }
 
 processResources {

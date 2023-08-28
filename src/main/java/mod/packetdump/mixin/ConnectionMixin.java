@@ -1,6 +1,5 @@
 package mod.packetdump.mixin;
 
-import com.github.luben.zstd.ZstdOutputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
@@ -25,11 +24,15 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.util.zip.GZIPOutputStream;
 
 @Mixin(Connection.class)
 public class ConnectionMixin implements ConnectionHandler {
-    @Shadow private Channel channel;
-    @Shadow @Final public static AttributeKey<ConnectionProtocol> ATTRIBUTE_PROTOCOL;
+    @Shadow
+    private Channel channel;
+    @Shadow
+    @Final
+    public static AttributeKey<ConnectionProtocol> ATTRIBUTE_PROTOCOL;
     @Unique
     private OutputStream stream = null;
     @Unique
@@ -45,15 +48,15 @@ public class ConnectionMixin implements ConnectionHandler {
                 DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss_")
                         .withZone(ZoneOffset.UTC)
                         .format(Instant.now())
-                        + profileId.toString()
-                        + ".dump.zst"
+                        + profileId.toString().replaceAll("-", "")
+                        + ".dump.gz"
         ).toFile();
 
         try {
             file.getParentFile().mkdirs();
             file.createNewFile();
 
-            stream = new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 1024 * 1024));
+            stream = new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(file), 1024 * 1024));
             startTime = Instant.now();
 
             FriendlyByteBuf headerBuf = new FriendlyByteBuf(Unpooled.buffer());
@@ -83,7 +86,6 @@ public class ConnectionMixin implements ConnectionHandler {
         }
     }
 
-    @Override
     public void dumpPacket(Packet<?> packet, boolean isReceiving) {
         if (stream == null) return;
 
@@ -106,13 +108,24 @@ public class ConnectionMixin implements ConnectionHandler {
         try {
             stream.write(headerBuf.array());
             stream.write(packetBuf.array());
-            if (lastFlush.plusSeconds(5).isBefore(Instant.now())) {
-                stream.flush();
-                lastFlush = Instant.now();
-            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void onTick(CallbackInfo ci) {
+        if (stream == null || channel == null) return;
+        channel.eventLoop().execute(() -> {
+            try {
+                if (lastFlush.plusSeconds(5).isBefore(Instant.now())) {
+                    stream.flush();
+                    lastFlush = Instant.now();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Inject(method = "doSendPacket", at = @At("TAIL"))
@@ -123,12 +136,8 @@ public class ConnectionMixin implements ConnectionHandler {
     @Inject(method = "genericsFtw", at = @At("HEAD"))
     private static void onReceivePacket(Packet<?> packet, PacketListener packetListener, CallbackInfo ci) {
         if (packetListener instanceof ConnectionListener connectionListener) {
-            connectionListener.getConnectionHandler().dumpPacket(packet, true);
+            ConnectionHandler connectionHandler = connectionListener.getConnectionHandler();
+            if (connectionHandler != null) connectionHandler.dumpPacket(packet, true);
         }
-    }
-
-    @Inject(method = "handleDisconnection", at = @At("TAIL"))
-    private void onDisconnect(CallbackInfo ci) {
-        stopPacketDump();
     }
 }

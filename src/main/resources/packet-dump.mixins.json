@@ -4,11 +4,13 @@
   "package": "mod.packetdump.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "ClientGamePacketListenerMixin",
     "ConnectionMixin",
     "ServerGamePacketListenerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "client": [
+    "ClientGamePacketListenerMixin"
+  ]
 }

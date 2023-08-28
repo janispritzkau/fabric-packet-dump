@@ -9,13 +9,17 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.telemetry.WorldSessionTelemetryManager;
 import net.minecraft.network.Connection;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPacketListener.class)
 public class ClientGamePacketListenerMixin implements ConnectionListener {
+    @Unique
+    @Nullable
     private ConnectionHandler connectionHandler = null;
 
     @Inject(method = "<init>", at = @At("TAIL"))
@@ -26,6 +30,11 @@ public class ClientGamePacketListenerMixin implements ConnectionListener {
                 gameProfile.getId(),
                 false
         );
+    }
+
+    @Inject(method = "close", at = @At("HEAD"))
+    private void onClose(CallbackInfo ci) {
+        if (connectionHandler != null) connectionHandler.stopPacketDump();
     }
 
     @Override
